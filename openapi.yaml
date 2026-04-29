@@ -1,0 +1,99 @@
+openapi: 3.0.3
+info:
+  title: Product Service API
+  description: REST API for the AWS shop application — provides product catalog data.
+  version: 1.0.0
+
+servers:
+  - url: https://ycn8ebyjkj.execute-api.us-east-1.amazonaws.com/prod
+    description: Production
+
+paths:
+  /products:
+    get:
+      summary: Get all products
+      description: Returns the full list of available products.
+      operationId: getProductsList
+      responses:
+        '200':
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+              example:
+                - id: 7567ec4b-b10c-48c5-9345-fc73c48a80aa
+                  title: ProductOne
+                  description: Short Product Description1
+                  price: 24
+                - id: 7567ec4b-b10c-48c5-9345-fc73c48a80a0
+                  title: ProductNew
+                  description: Short Product Description3
+                  price: 10
+
+  /products/{productId}:
+    get:
+      summary: Get product by ID
+      description: Returns a single product by its unique identifier.
+      operationId: getProductsById
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Unique product identifier (UUID)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: 7567ec4b-b10c-48c5-9345-fc73c48a80aa
+                title: ProductOne
+                description: Short Product Description1
+                price: 24
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Product not found
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - price
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique product identifier
+        title:
+          type: string
+          description: Product name
+        description:
+          type: string
+          description: Product description
+        price:
+          type: number
+          description: Product price
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
