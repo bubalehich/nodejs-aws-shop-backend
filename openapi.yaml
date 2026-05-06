@@ -1,18 +1,18 @@
 openapi: 3.0.3
 info:
   title: Product Service API
-  description: REST API for the AWS shop application — provides product catalog data.
-  version: 1.0.0
+  description: REST API for the AWS shop application — provides product catalog data backed by DynamoDB.
+  version: 2.0.0
 
 servers:
-  - url: https://ycn8ebyjkj.execute-api.us-east-1.amazonaws.com/prod
+  - url: https://mv9r6b0fml.execute-api.us-east-1.amazonaws.com/prod
     description: Production
 
 paths:
   /products:
     get:
       summary: Get all products
-      description: Returns the full list of available products.
+      description: Returns the full list of products joined with stock counts.
       operationId: getProductsList
       responses:
         '200':
@@ -23,20 +23,43 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Product'
-              example:
-                - id: 7567ec4b-b10c-48c5-9345-fc73c48a80aa
-                  title: ProductOne
-                  description: Short Product Description1
-                  price: 24
-                - id: 7567ec4b-b10c-48c5-9345-fc73c48a80a0
-                  title: ProductNew
-                  description: Short Product Description3
-                  price: 10
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create a new product
+      description: Creates a new product and its stock entry transactionally.
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductInput'
+            example:
+              title: New Gadget
+              description: A shiny new gadget
+              price: 199
+              count: 10
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /products/{productId}:
     get:
       summary: Get product by ID
-      description: Returns a single product by its unique identifier.
+      description: Returns a single product joined with its stock count, or 404 if not found.
       operationId: getProductsById
       parameters:
         - name: productId
@@ -52,43 +75,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-              example:
-                id: 7567ec4b-b10c-48c5-9345-fc73c48a80aa
-                title: ProductOne
-                description: Short Product Description1
-                price: 24
+        '400':
+          description: Missing productId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Product not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                message: Product not found
+        '500':
+          $ref: '#/components/responses/InternalError'
 
 components:
+  responses:
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
   schemas:
     Product:
       type: object
       required:
         - id
         - title
-        - description
         - price
+        - count
       properties:
         id:
           type: string
           format: uuid
-          description: Unique product identifier
         title:
           type: string
-          description: Product name
         description:
           type: string
-          description: Product description
         price:
           type: number
-          description: Product price
+        count:
+          type: integer
+          description: Quantity available in stock
+    CreateProductInput:
+      type: object
+      required:
+        - title
+        - price
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0
+        count:
+          type: integer
+          minimum: 0
     Error:
       type: object
       required:
@@ -96,4 +143,3 @@ components:
       properties:
         message:
           type: string
-          description: Human-readable error message
