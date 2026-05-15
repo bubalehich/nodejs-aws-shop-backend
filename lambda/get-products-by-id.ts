@@ -1,27 +1,49 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { products } from './products-data';
-
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': '*',
-  'Access-Control-Allow-Methods': 'GET,OPTIONS',
-};
+import { GetCommand } from '@aws-sdk/lib-dynamodb';
+import { ddb, PRODUCTS_TABLE, STOCKS_TABLE, corsHeaders, Product, Stock } from './db';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
-  const productId = event.pathParameters?.productId;
-  const product = products.find((p) => p.id === productId);
+  console.log('getProductsById request:', JSON.stringify({ pathParameters: event.pathParameters }));
 
-  if (!product) {
+  const productId = event.pathParameters?.productId;
+
+  if (!productId) {
     return {
-      statusCode: 404,
-      headers,
-      body: JSON.stringify({ message: 'Product not found' }),
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'productId is required' }),
     };
   }
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify(product),
-  };
+  try {
+    const [productResult, stockResult] = await Promise.all([
+      ddb.send(new GetCommand({ TableName: PRODUCTS_TABLE, Key: { id: productId } })),
+      ddb.send(new GetCommand({ TableName: STOCKS_TABLE, Key: { product_id: productId } })),
+    ]);
+
+    const product = productResult.Item as Product | undefined;
+
+    if (!product) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ message: 'Product not found' }),
+      };
+    }
+
+    const stock = stockResult.Item as Stock | undefined;
+
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ ...product, count: stock?.count ?? 0 }),
+    };
+  } catch (err) {
+    console.error('getProductsById error:', err);
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ message: 'Internal server error' }),
+    };
+  }
 };

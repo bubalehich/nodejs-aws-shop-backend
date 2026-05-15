@@ -1,6 +1,19 @@
-import { handler } from '../lambda/get-products-by-id';
-import { products } from '../lambda/products-data';
 import { APIGatewayProxyEvent, Context, Callback, APIGatewayProxyResult } from 'aws-lambda';
+
+const sendMock = jest.fn();
+
+jest.mock('@aws-sdk/lib-dynamodb', () => ({
+  DynamoDBDocumentClient: { from: () => ({ send: sendMock }) },
+  GetCommand: jest.fn().mockImplementation((args) => ({ __type: 'Get', ...args })),
+}));
+
+process.env.PRODUCTS_TABLE = 'products';
+process.env.STOCKS_TABLE = 'stocks';
+
+import { handler } from '../lambda/get-products-by-id';
+
+const product = { id: 'p1', title: 'A', description: 'Desc', price: 10 };
+const stock = { product_id: 'p1', count: 5 };
 
 const invoke = async (productId?: string) => {
   const event = { pathParameters: productId ? { productId } : null } as unknown as APIGatewayProxyEvent;
@@ -9,31 +22,40 @@ const invoke = async (productId?: string) => {
 };
 
 describe('getProductsById', () => {
-  it('returns 200 and the matching product when ID exists', async () => {
-    const expected = products[0];
-    const result = await invoke(expected.id);
-
-    expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual(expected);
+  beforeEach(() => {
+    sendMock.mockReset();
   });
 
-  it('returns 404 when product does not exist', async () => {
-    const result = await invoke('non-existent-id');
+  it('returns 200 with the joined product when found', async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: product })
+      .mockResolvedValueOnce({ Item: stock });
+
+    const result = await invoke('p1');
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual({ ...product, count: 5 });
+  });
+
+  it('returns 404 when product not found', async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: undefined })
+      .mockResolvedValueOnce({ Item: undefined });
+
+    const result = await invoke('missing');
 
     expect(result.statusCode).toBe(404);
     expect(JSON.parse(result.body)).toEqual({ message: 'Product not found' });
   });
 
-  it('returns 404 when productId is missing', async () => {
+  it('returns 400 when productId is missing', async () => {
     const result = await invoke();
-
-    expect(result.statusCode).toBe(404);
+    expect(result.statusCode).toBe(400);
   });
 
-  it('includes CORS headers', async () => {
-    const result = await invoke(products[0].id);
-    expect(result.headers).toMatchObject({
-      'Access-Control-Allow-Origin': '*',
-    });
+  it('returns 500 on DynamoDB failure', async () => {
+    sendMock.mockRejectedValue(new Error('boom'));
+    const result = await invoke('p1');
+    expect(result.statusCode).toBe(500);
   });
 });
