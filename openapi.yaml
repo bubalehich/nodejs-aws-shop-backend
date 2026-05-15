@@ -1,12 +1,14 @@
 openapi: 3.0.3
 info:
-  title: Product Service API
-  description: REST API for the AWS shop application — provides product catalog data backed by DynamoDB.
-  version: 2.0.0
+  title: AWS Shop Backend API
+  description: Product Service (DynamoDB-backed catalog) and Import Service (CSV upload via S3 signed URLs).
+  version: 3.0.0
 
 servers:
   - url: https://mv9r6b0fml.execute-api.us-east-1.amazonaws.com/prod
-    description: Production
+    description: Product Service
+  - url: https://96rbu86vd3.execute-api.us-east-1.amazonaws.com/prod
+    description: Import Service
 
 paths:
   /products:
@@ -49,6 +51,34 @@ paths:
                 $ref: '#/components/schemas/Product'
         '400':
           description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /import:
+    get:
+      summary: Get pre-signed URL for CSV upload
+      description: Returns a pre-signed S3 URL to upload a CSV file into the `uploaded/` folder. On upload, the `importFileParser` Lambda parses the file and moves it to `parsed/`.
+      operationId: importProductsFile
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Name of the CSV file to upload
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signed URL (plain string)
+          content:
+            application/json:
+              schema:
+                type: string
+        '400':
+          description: Missing `name` query parameter
           content:
             application/json:
               schema:
