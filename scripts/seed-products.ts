@@ -9,12 +9,16 @@ const STOCKS_TABLE = process.env.STOCKS_TABLE || 'stocks';
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
 
 const seed = [
-  { title: 'ProductOne', description: 'Short Product Description1', price: 24, count: 4 },
-  { title: 'ProductNew', description: 'Short Product Description3', price: 10, count: 6 },
-  { title: 'ProductTop', description: 'Short Product Description2', price: 23, count: 7 },
-  { title: 'ProductTitle', description: 'Short Product Description7', price: 15, count: 12 },
-  { title: 'Product', description: 'Short Product Descriptio1', price: 23, count: 7 },
-  { title: 'ProductTest', description: 'Short Product Description4', price: 15, count: 8 },
+  { title: 'The One Ring', description: 'Forged in the fires of Mount Doom. One ring to rule them all.', price: 9999, count: 1 },
+  { title: 'Sting', description: 'Elven dagger that glows blue when orcs are near. Wielded by Bilbo and Frodo.', price: 450, count: 3 },
+  { title: 'Andúril, Flame of the West', description: 'Reforged from the shards of Narsil. Sword of the King of Gondor.', price: 1200, count: 1 },
+  { title: 'Mithril Shirt', description: 'Lightweight chainmail forged in Moria. Worth more than the Shire.', price: 5000, count: 2 },
+  { title: 'Lembas Bread', description: 'Elven waybread from Lothlórien. One bite fills the stomach of a grown man.', price: 12, count: 50 },
+  { title: 'Pipe-weed (Longbottom Leaf)', description: 'The finest weed in the Southfarthing. A hobbit\'s best friend.', price: 8, count: 100 },
+  { title: 'Galadriel\'s Phial', description: 'A crystal phial containing the light of Eärendil\'s star.', price: 2200, count: 1 },
+  { title: 'Elven Cloak', description: 'Grey cloak from Lothlórien. Hides the wearer from unfriendly eyes.', price: 180, count: 9 },
+  { title: 'Palantír', description: 'A seeing-stone of Númenor. Use with caution — Sauron is watching.', price: 7500, count: 2 },
+  { title: 'Horn of Gondor', description: 'Bound with silver. Sounds across the lands of the Steward.', price: 350, count: 1 },
 ];
 
 async function run() {
