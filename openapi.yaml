@@ -7,7 +7,7 @@ info:
 servers:
   - url: https://mv9r6b0fml.execute-api.us-east-1.amazonaws.com/prod
     description: Product Service
-  - url: https://96rbu86vd3.execute-api.us-east-1.amazonaws.com/prod
+  - url: https://etw2b0mtja.execute-api.us-east-1.amazonaws.com/prod
     description: Import Service
 
 paths:

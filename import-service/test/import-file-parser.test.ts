@@ -9,7 +9,7 @@ jest.mock('@aws-sdk/client-s3', () => ({
   DeleteObjectCommand: jest.fn().mockImplementation((args) => ({ __type: 'Delete', ...args })),
 }));
 
-import { handler } from '../lambda/import/import-file-parser';
+import { handler } from '../lambda/import-file-parser';
 import type { S3Event, Context, Callback } from 'aws-lambda';
 
 const makeEvent = (key: string): S3Event => ({

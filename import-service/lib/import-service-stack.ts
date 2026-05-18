@@ -7,24 +7,17 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
+const IMPORT_BUCKET_NAME = 'bubalehich-shop-import-bucket';
+
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const bucket = new s3.Bucket(this, 'ImportBucket', {
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-      cors: [
-        {
-          allowedOrigins: ['*'],
-          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.GET, s3.HttpMethods.POST],
-          allowedHeaders: ['*'],
-        },
-      ],
-    });
+    const bucket = s3.Bucket.fromBucketName(this, 'ImportBucket', IMPORT_BUCKET_NAME);
 
     const importProductsFile = new NodejsFunction(this, 'ImportProductsFileFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      entry: path.join(__dirname, '../lambda/import/import-products-file.ts'),
+      entry: path.join(__dirname, '../lambda/import-products-file.ts'),
       handler: 'handler',
       functionName: 'importProductsFile',
       environment: {
@@ -34,7 +27,7 @@ export class ImportServiceStack extends cdk.Stack {
 
     const importFileParser = new NodejsFunction(this, 'ImportFileParserFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      entry: path.join(__dirname, '../lambda/import/import-file-parser.ts'),
+      entry: path.join(__dirname, '../lambda/import-file-parser.ts'),
       handler: 'handler',
       functionName: 'importFileParser',
       bundling: {

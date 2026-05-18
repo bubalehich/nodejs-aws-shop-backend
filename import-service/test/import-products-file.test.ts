@@ -13,7 +13,7 @@ jest.mock('@aws-sdk/s3-request-presigner', () => ({
 
 process.env.IMPORT_BUCKET = 'test-bucket';
 
-import { handler } from '../lambda/import/import-products-file';
+import { handler } from '../lambda/import-products-file';
 
 const invoke = async (name?: string) => {
   const event = { queryStringParameters: name ? { name } : null } as unknown as APIGatewayProxyEvent;
