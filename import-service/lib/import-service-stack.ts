@@ -10,6 +10,7 @@ import * as path from 'path';
 
 const IMPORT_BUCKET_NAME = 'bubalehich-shop-import-bucket';
 const CATALOG_QUEUE_NAME = 'j-catalogItemsQueue';
+const BASIC_AUTHORIZER_NAME = 'basicAuthorizer';
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -22,6 +23,12 @@ export class ImportServiceStack extends cdk.Stack {
       'CatalogItemsQueue',
       `arn:aws:sqs:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:${CATALOG_QUEUE_NAME}`
     );
+
+    const basicAuthorizerArn = `arn:aws:lambda:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:function:${BASIC_AUTHORIZER_NAME}`;
+    const basicAuthorizer = lambda.Function.fromFunctionAttributes(this, 'BasicAuthorizer', {
+      functionArn: basicAuthorizerArn,
+      sameEnvironment: true,
+    });
 
     const importProductsFile = new NodejsFunction(this, 'ImportProductsFileFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -67,8 +74,36 @@ export class ImportServiceStack extends cdk.Stack {
       },
     });
 
+    // CORS headers on auth failure responses so the browser can read 401/403
+    new apigateway.GatewayResponse(this, 'Unauthorized401', {
+      restApi: api,
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      statusCode: '401',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'*'",
+      },
+    });
+    new apigateway.GatewayResponse(this, 'AccessDenied403', {
+      restApi: api,
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      statusCode: '403',
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'*'",
+      },
+    });
+
+    const authorizer = new apigateway.TokenAuthorizer(this, 'BasicTokenAuthorizer', {
+      handler: basicAuthorizer,
+      identitySource: apigateway.IdentitySource.header('Authorization'),
+      resultsCacheTtl: cdk.Duration.seconds(0),
+    });
+
     const importResource = api.root.addResource('import');
     importResource.addMethod('GET', new apigateway.LambdaIntegration(importProductsFile), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.CUSTOM,
       requestParameters: {
         'method.request.querystring.name': true,
       },
