@@ -37,15 +37,21 @@ export const handler = (
     return;
   }
 
+  const deny = () => callback(null, generatePolicy('user', 'Deny', event.methodArn));
+
   try {
     const [scheme, token] = authHeader.split(' ');
     if (scheme !== 'Basic' || !token) {
-      callback('Unauthorized');
+      deny();
       return;
     }
 
     const decoded = Buffer.from(token, 'base64').toString('utf-8');
     const [login, password] = decoded.split(':');
+    if (!login || password === undefined) {
+      deny();
+      return;
+    }
 
     const expectedPassword = process.env[login];
     const effect: 'Allow' | 'Deny' =
@@ -55,6 +61,6 @@ export const handler = (
     callback(null, generatePolicy(login, effect, event.methodArn));
   } catch (err) {
     console.error('basicAuthorizer error:', err);
-    callback('Unauthorized');
+    deny();
   }
 };
