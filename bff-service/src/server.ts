@@ -109,7 +109,7 @@ async function handleProxy(req: FastifyRequest, reply: FastifyReply): Promise<Fa
 
     if (
       recipient === 'product' &&
-      (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') &&
+      ['POST', 'PUT', 'DELETE'].includes(req.method) &&
       response.statusCode >= 200 &&
       response.statusCode < 300
     ) {
