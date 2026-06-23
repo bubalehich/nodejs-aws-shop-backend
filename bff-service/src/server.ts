@@ -26,10 +26,20 @@ function resolveRecipient(name: string): string | undefined {
   return process.env[name];
 }
 
+// Allowlist: forward only headers needed by upstream services.
+// Forwarding more (e.g. x-amzn-*, x-forwarded-*) makes API Gateway interpret
+// the request as an AWS SigV4 attempt and reject the Authorization header.
+const FORWARD_HEADERS = new Set([
+  'authorization',
+  'content-type',
+  'accept',
+  'cookie',
+]);
+
 function buildHeaders(req: FastifyRequest): Record<string, string> {
   const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(req.headers)) {
-    if (HOP_BY_HOP.has(name.toLowerCase())) continue;
+    if (!FORWARD_HEADERS.has(name.toLowerCase())) continue;
     if (value === undefined) continue;
     headers[name] = Array.isArray(value) ? value.join(', ') : String(value);
   }
