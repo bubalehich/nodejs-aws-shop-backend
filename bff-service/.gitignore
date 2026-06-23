@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+*.log
+.elasticbeanstalk/logs
+.elasticbeanstalk/saved_configs
+.elasticbeanstalk/app_versions
